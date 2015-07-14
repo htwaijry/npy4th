@@ -2,7 +2,7 @@ package = "npy4th"
 version = "1.0-0"
 
 source = {
-   url = "https://github.com/htwaijry/npy4th",
+   url = "git://github.com/htwaijry/npy4th",
    tag = "1.0-0"
 }
 
@@ -11,7 +11,7 @@ description = {
    detailed = [[
       Load .npy files into torch.
    ]],
-   homepage = "https://github.com/htwaijry/npy4th",
+   homepage = "git://github.com/htwaijry/npy4th",
    license = "MIT"
 }
 
