@@ -14,3 +14,14 @@ clone https://github.com/htwaijry/npy4th.git
 cd npy4th
 luarocks make
 ```
+
+### Use
+```
+npy4th = require 'npy4th'
+
+-- read a .npy file into a torch tensor
+array = npy4th.loadnpy('array.npy')
+
+-- read a .npz file into a table
+tbl = npy4th.loadnpz('table.npz')
+```
