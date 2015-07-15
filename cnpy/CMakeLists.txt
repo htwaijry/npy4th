@@ -5,7 +5,7 @@ endif(COMMAND cmake_policy)
 
 project(CNPY)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -arch x86_64")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 option(ENABLE_STATIC "Build static (.a) library" ON)
 

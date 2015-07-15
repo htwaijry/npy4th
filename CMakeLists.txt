@@ -17,7 +17,7 @@ add_subdirectory (cnpy)
 
 FIND_PACKAGE(Torch REQUIRED)
 
-include_directories(${TORCH_INCLUDE_DIR})
+include_directories(${TORCH_INCLUDE_DIR} "cnpy/")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
