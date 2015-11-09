@@ -72,7 +72,8 @@ void cnpy::parse_npy_header(FILE* fp, size_t& word_size, char& arrayType, std::v
 
     //fortran order
     loc1 = header.find("fortran_order")+16;
-    fortran_order = (header.substr(loc1,5) == "True" ? true : false);
+    
+    fortran_order = (header.substr(loc1,4) == "True" ? true : false);
 
     //shape
     loc1 = header.find("(");
@@ -135,9 +136,17 @@ cnpy::NpyArray load_the_npy_file(FILE* fp) {
     cnpy::parse_npy_header(fp,word_size, arrayType, shape,fortran_order);
 
     cnpy::NpyArray arr(shape, word_size, arrayType, fortran_order);
+    
     size_t nread = fread(arr.data<char>(),1,arr.num_bytes(),fp);
     if(nread != arr.num_bytes())
         throw std::runtime_error("load_the_npy_file: failed fread");
+
+
+    if ( fortran_order ){
+	    arr.convert_to_c_order();
+	    arr.fortran_order=false;
+    }
+
     return arr;
 }
 

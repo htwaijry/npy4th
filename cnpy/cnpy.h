@@ -49,7 +49,47 @@ namespace cnpy {
             return data_holder->size();
         }
 
-        std::shared_ptr<std::vector<char>> data_holder;
+	void convert_to_c_order(){
+		// allocate temporary vector on heap
+        	std::vector<char> *tmp_holder = new std::vector<char>(data_holder->size());
+
+		std::vector<size_t> idx;
+		idx.resize(shape.size()); //reshape the indexing vector
+		
+		std::vector<char> *raw_data = data_holder.get();
+		
+		std::vector<size_t> fortran_strides;
+		fortran_strides.resize(shape.size());
+		// comptue the amount of striding we need to do in fortran
+		int s = 1;
+            	for (size_t i = 0; i < shape.size(); ++i) {
+			fortran_strides[i] = s;
+			s *= shape[i];
+		}
+
+		for (int k=0; k < num_vals; k++){ // k
+			//find the k index in C
+			int val=k;
+			for(int i=shape.size()-1; i >= 0; --i) {
+				idx[i] = val % shape[i];
+				val /= shape[i];
+			}
+			//find the flat index in fortran
+			int flat_idx=0;
+			for (int i = 0; i < shape.size(); ++i) {
+				flat_idx += idx[i]*fortran_strides[i];
+			}
+			// copy the bytes
+				
+			for (int w=0; w<word_size; w++){
+				(*tmp_holder)[(word_size)*k+w] = (*raw_data)[(word_size)*flat_idx+w];
+			}
+		}
+
+		data_holder.reset(tmp_holder); // move the data into the new holder and delete the old
+		
+	}
+	std::shared_ptr<std::vector<char>> data_holder;
         std::vector<size_t> shape;
         size_t word_size;
         bool fortran_order;

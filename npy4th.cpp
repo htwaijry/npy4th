@@ -68,7 +68,7 @@ static void load_array_to_lua(lua_State *L, cnpy::NpyArray& arr){
 		    luaT_pushudata(L, tensor, luaT_checktypename2id(L, "torch.LongTensor"));
 		}
 	}else{
-		printf("array type: %c\n", arr.arrayType );
+		printf("array type unsupported");
 		throw std::runtime_error("unsupported data type");
 	}
 
