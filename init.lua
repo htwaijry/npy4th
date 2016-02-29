@@ -1,4 +1,4 @@
---Copyright (C) 2015  Hani Altwaijry
+--Copyright (C) 2016  Hani Altwaijry
 --Released under MIT License
 --license available in LICENSE file
 
@@ -9,9 +9,21 @@ require 'xlua'
 local npy4th = {}
 
 local help = {
-loadnpy = [[Loads a numpy .npy file to a torch.Tensor]],
-loadnpz = [[Loads a numpy .npz file to a table]]
+loadnpy = [[loadnpy(filepath) -- Loads a numpy .npy file to a torch.Tensor]],
+loadnpz = [[loadnpz(filepath) -- Loads a numpy .npz file to a table]],
+savenpy = [[savenpy(filepath, tensor) -- Saves a torch tensor in .npy format]]
 }
+
+local typeIds = {}
+typeIds['torch.DoubleTensor']=0
+typeIds['torch.FloatTensor']=1
+typeIds['torch.IntTensor']=2
+typeIds['torch.ByteTensor']=3
+typeIds['torch.LongTensor']=4
+typeIds['torch.ShortTensor']=5
+typeIds['torch.CudaTensor']=1 -- saved as float
+
+
 
 npy4th.loadnpy = function(filepath)
                    if not filepath then
@@ -31,6 +43,20 @@ npy4th.loadnpz = function(filepath)
                    return libnpy4th.loadnpz(filepath)
                 end
 
+npy4th.savenpy = function(filepath, tensor)
+		  if not filepath then
+			xlua.error('file path must be supplied', 
+					'npy4th.savenpy', 
+					help.savenpy)
+		  end
+		  if not tensor or (type(tensor) =='userdata' and tensor.__typename ~= nil and typeIds[tensor:type()] == nil ) then
+			xlua.error('Must pass a torch.*Tensor or unsupported tensor type', 'npy4th.savenpy', help.savenpy)
+		  end
+		  if tensor:type()=='torch.CudaTensor' then
+			tensor = tensor:float() -- convert it to float
+		  end
 
+		  return libnpy4th.savenpy(filepath, tensor, typeIds[tensor:type()])
+		end
 
 return npy4th
