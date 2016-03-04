@@ -12,7 +12,7 @@ Reads .npy and .npz files, and stores torch.*Tensor in .npy format.
 You can install the package as follows:
 
 ```
-clone https://github.com/htwaijry/npy4th.git
+git clone https://github.com/htwaijry/npy4th.git
 cd npy4th
 luarocks make
 ```
