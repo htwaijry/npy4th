@@ -31,3 +31,6 @@ tbl = npy4th.loadnpz('table.npz')
 myTensor = torch.Tensor({1,2,3})
 npy4th.savenpy('tensor.npy', myTensor)
 ```
+
+### The Official `npy4th` Mascot
+![example-documentation.jpg](example-documentation.jpg)
