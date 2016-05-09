@@ -129,56 +129,68 @@ namespace cnpy {
         return s.str();
     }
 
-    template<typename T> void npy_save(std::string fname, const T* data, const std::vector<size_t> shape, std::string mode = "w") {
+    template<typename T> bool npy_save(std::string fname, const T* data, const std::vector<size_t> shape, std::string mode = "w") {
         FILE* fp = NULL;
+	
+	bool success= false;
+	bool appendMode=false;
 
-        if(mode == "a") fp = fopen(fname.c_str(),"r+b");
+        if(mode == "a"){
+		appendMode=true;
+		fp = fopen(fname.c_str(),"r+b");
+	}else{
+            	fp = fopen(fname.c_str(),"wb");
+	}
 
-        if(fp) {
-            //file exists. we need to append to it. read the header, modify the array size
-            size_t word_size;
-            char arrayType;
-            std::vector<size_t> tmp_shape;
-            bool fortran_order;
-            parse_npy_header(fp,word_size, arrayType, tmp_shape,fortran_order);
-            assert(!fortran_order);
+	if (fp){
+		if(appendMode) {
+		    //file exists. we need to append to it. read the header, modify the array size
+		    size_t word_size;
+		    char arrayType;
+		    std::vector<size_t> tmp_shape;
+		    bool fortran_order;
+		    parse_npy_header(fp,word_size, arrayType, tmp_shape,fortran_order);
+		    assert(!fortran_order);
 
-            if(word_size != sizeof(T)) {
-                std::cout<<"libnpy error: "<<fname<<" has word size "<<word_size<<" but npy_save appending data sized "<<sizeof(T)<<"\n";
-                assert( word_size == sizeof(T) );
-            }
-            if(tmp_shape.size() != shape.size()) {
-                std::cout<<"libnpy error: npy_save attempting to append misdimensioned data to "<<fname<<"\n";
-                assert(tmp_shape.size() != shape.size());
-            }
+		    if(word_size != sizeof(T)) {
+			std::cout<<"libnpy error: "<<fname<<" has word size "<<word_size<<" but npy_save appending data sized "<<sizeof(T)<<"\n";
+			assert( word_size == sizeof(T) );
+		    }
+		    if(tmp_shape.size() != shape.size()) {
+			std::cout<<"libnpy error: npy_save attempting to append misdimensioned data to "<<fname<<"\n";
+			assert(tmp_shape.size() != shape.size());
+		    }
 
-            for(size_t i = 1; i < shape.size(); i++) {
-                if(shape[i] != tmp_shape[i]) {
-                    std::cout<<"libnpy error: npy_save attempting to append misshaped data to "<<fname<<"\n";
-                    assert(shape[i] == tmp_shape[i]);
-                }
-            }
-            tmp_shape[0] += shape[0];
+		    for(size_t i = 1; i < shape.size(); i++) {
+			if(shape[i] != tmp_shape[i]) {
+			    std::cout<<"libnpy error: npy_save attempting to append misshaped data to "<<fname<<"\n";
+			    assert(shape[i] == tmp_shape[i]);
+			}
+		    }
+		    tmp_shape[0] += shape[0];
 
-            fseek(fp,0,SEEK_SET);
-            std::vector<char> header = create_npy_header<T>(tmp_shape);
-            fwrite(&header[0],sizeof(char),header.size(),fp);
-            fseek(fp,0,SEEK_END);
-        }
-        else {
-            fp = fopen(fname.c_str(),"wb");
-            std::vector<char> header = create_npy_header<T>(shape);
-            fwrite(&header[0],sizeof(char),header.size(),fp);
-        }
+		    fseek(fp,0,SEEK_SET);
+		    std::vector<char> header = create_npy_header<T>(tmp_shape);
+		    fwrite(&header[0],sizeof(char),header.size(),fp);
+		    fseek(fp,0,SEEK_END);
+		}
+		else {
+			std::vector<char> header = create_npy_header<T>(shape);
+			fwrite(&header[0],sizeof(char),header.size(),fp);
+		}
 
-        size_t nels = 1;
-        for(size_t i = 0;i < shape.size();i++) nels *= shape[i];
 
-        fwrite(data,sizeof(T),nels,fp);
-        fclose(fp);
+		size_t nels = 1;
+		for(size_t i = 0;i < shape.size();i++) nels *= shape[i];
+
+		fwrite(data,sizeof(T),nels,fp);
+		fclose(fp);
+		success=true;
+	}
+	return success;
     }
 
-    template<typename T> void npz_save(std::string zipname, std::string fname, const T* data, const std::vector<size_t>& shape, std::string mode = "w")
+    template<typename T> bool npz_save(std::string zipname, std::string fname, const T* data, const std::vector<size_t>& shape, std::string mode = "w")
     {
         //first, append a .npy to the fname
         fname += ".npy";
@@ -188,97 +200,107 @@ namespace cnpy {
         uint16_t nrecs = 0;
         size_t global_header_offset = 0;
         std::vector<char> global_header;
+	
+	bool appendMode=false;
+	bool success=false;
 
-        if(mode == "a") fp = fopen(zipname.c_str(),"r+b");
-
-        if(fp) {
-            //zip file exists. we need to add a new npy file to it.
-            //first read the footer. this gives us the offset and size of the global header
-            //then read and store the global header. 
-            //below, we will write the the new data at the start of the global header then append the global header and footer below it
-            size_t global_header_size;
-            parse_zip_footer(fp,nrecs,global_header_size,global_header_offset);
-            fseek(fp,global_header_offset,SEEK_SET);
-            global_header.resize(global_header_size);
-            size_t res = fread(&global_header[0],sizeof(char),global_header_size,fp);
-            if(res != global_header_size){
-                throw std::runtime_error("npz_save: header read error while adding to existing zip");
-            }
-            fseek(fp,global_header_offset,SEEK_SET);
-        }
-        else {
+        if(mode == "a"){
+		appendMode=true;
+		fp = fopen(zipname.c_str(),"r+b");
+	}else{
+		
             fp = fopen(zipname.c_str(),"wb");
-        }
+	}
+	if (fp) {
+		if(appendMode) {
 
-        std::vector<char> npy_header = create_npy_header<T>(shape);
+		    //zip file exists. we need to add a new npy file to it.
+		    //first read the footer. this gives us the offset and size of the global header
+		    //then read and store the global header. 
+		    //below, we will write the the new data at the start of the global header then append the global header and footer below it
+		    size_t global_header_size;
+		    parse_zip_footer(fp,nrecs,global_header_size,global_header_offset);
+		    fseek(fp,global_header_offset,SEEK_SET);
+		    global_header.resize(global_header_size);
+		    size_t res = fread(&global_header[0],sizeof(char),global_header_size,fp);
+		    if(res != global_header_size){
+			throw std::runtime_error("npz_save: header read error while adding to existing zip");
+		    }
+		    fseek(fp,global_header_offset,SEEK_SET);
+		}
 
-        size_t nels = 1;
-        for (size_t m=0; m<shape.size(); m++ ) nels *= shape[m];
-        int nbytes = nels*sizeof(T) + npy_header.size();
+		std::vector<char> npy_header = create_npy_header<T>(shape);
 
-        //get the CRC of the data to be added
-        uint32_t crc = crc32(0L,(uint8_t*)&npy_header[0],npy_header.size());
-        crc = crc32(crc,(uint8_t*)data,nels*sizeof(T));
+		size_t nels = 1;
+		for (size_t m=0; m<shape.size(); m++ ) nels *= shape[m];
+		int nbytes = nels*sizeof(T) + npy_header.size();
 
-        //build the local header
-        std::vector<char> local_header;
-        local_header += "PK"; //first part of sig
-        local_header += (uint16_t) 0x0403; //second part of sig
-        local_header += (uint16_t) 20; //min version to extract
-        local_header += (uint16_t) 0; //general purpose bit flag
-        local_header += (uint16_t) 0; //compression method
-        local_header += (uint16_t) 0; //file last mod time
-        local_header += (uint16_t) 0;     //file last mod date
-        local_header += (uint32_t) crc; //crc
-        local_header += (uint32_t) nbytes; //compressed size
-        local_header += (uint32_t) nbytes; //uncompressed size
-        local_header += (uint16_t) fname.size(); //fname length
-        local_header += (uint16_t) 0; //extra field length
-        local_header += fname;
+		//get the CRC of the data to be added
+		uint32_t crc = crc32(0L,(uint8_t*)&npy_header[0],npy_header.size());
+		crc = crc32(crc,(uint8_t*)data,nels*sizeof(T));
 
-        //build global header
-        global_header += "PK"; //first part of sig
-        global_header += (uint16_t) 0x0201; //second part of sig
-        global_header += (uint16_t) 20; //version made by
-        global_header.insert(global_header.end(),local_header.begin()+4,local_header.begin()+30);
-        global_header += (uint16_t) 0; //file comment length
-        global_header += (uint16_t) 0; //disk number where file starts
-        global_header += (uint16_t) 0; //internal file attributes
-        global_header += (uint32_t) 0; //external file attributes
-        global_header += (uint32_t) global_header_offset; //relative offset of local file header, since it begins where the global header used to begin
-        global_header += fname;
+		//build the local header
+		std::vector<char> local_header;
+		local_header += "PK"; //first part of sig
+		local_header += (uint16_t) 0x0403; //second part of sig
+		local_header += (uint16_t) 20; //min version to extract
+		local_header += (uint16_t) 0; //general purpose bit flag
+		local_header += (uint16_t) 0; //compression method
+		local_header += (uint16_t) 0; //file last mod time
+		local_header += (uint16_t) 0;     //file last mod date
+		local_header += (uint32_t) crc; //crc
+		local_header += (uint32_t) nbytes; //compressed size
+		local_header += (uint32_t) nbytes; //uncompressed size
+		local_header += (uint16_t) fname.size(); //fname length
+		local_header += (uint16_t) 0; //extra field length
+		local_header += fname;
 
-        //build footer
-        std::vector<char> footer;
-        footer += "PK"; //first part of sig
-        footer += (uint16_t) 0x0605; //second part of sig
-        footer += (uint16_t) 0; //number of this disk
-        footer += (uint16_t) 0; //disk where footer starts
-        footer += (uint16_t) (nrecs+1); //number of records on this disk
-        footer += (uint16_t) (nrecs+1); //total number of records
-        footer += (uint32_t) global_header.size(); //nbytes of global headers
-        footer += (uint32_t) (global_header_offset + nbytes + local_header.size()); //offset of start of global headers, since global header now starts after newly written array
-        footer += (uint16_t) 0; //zip file comment length
+		//build global header
+		global_header += "PK"; //first part of sig
+		global_header += (uint16_t) 0x0201; //second part of sig
+		global_header += (uint16_t) 20; //version made by
+		global_header.insert(global_header.end(),local_header.begin()+4,local_header.begin()+30);
+		global_header += (uint16_t) 0; //file comment length
+		global_header += (uint16_t) 0; //disk number where file starts
+		global_header += (uint16_t) 0; //internal file attributes
+		global_header += (uint32_t) 0; //external file attributes
+		global_header += (uint32_t) global_header_offset; //relative offset of local file header, since it begins where the global header used to begin
+		global_header += fname;
 
-        //write everything      
-        fwrite(&local_header[0],sizeof(char),local_header.size(),fp);
-        fwrite(&npy_header[0],sizeof(char),npy_header.size(),fp);
-        fwrite(data,sizeof(T),nels,fp);
-        fwrite(&global_header[0],sizeof(char),global_header.size(),fp);
-        fwrite(&footer[0],sizeof(char),footer.size(),fp);
-        fclose(fp);
+		//build footer
+		std::vector<char> footer;
+		footer += "PK"; //first part of sig
+		footer += (uint16_t) 0x0605; //second part of sig
+		footer += (uint16_t) 0; //number of this disk
+		footer += (uint16_t) 0; //disk where footer starts
+		footer += (uint16_t) (nrecs+1); //number of records on this disk
+		footer += (uint16_t) (nrecs+1); //total number of records
+		footer += (uint32_t) global_header.size(); //nbytes of global headers
+		footer += (uint32_t) (global_header_offset + nbytes + local_header.size()); //offset of start of global headers, since global header now starts after newly written array
+		footer += (uint16_t) 0; //zip file comment length
+
+		//write everything      
+		fwrite(&local_header[0],sizeof(char),local_header.size(),fp);
+		fwrite(&npy_header[0],sizeof(char),npy_header.size(),fp);
+		fwrite(data,sizeof(T),nels,fp);
+		fwrite(&global_header[0],sizeof(char),global_header.size(),fp);
+		fwrite(&footer[0],sizeof(char),footer.size(),fp);
+		fclose(fp);
+		success=true;
+	}
+	return success;
     }
 
-    template<typename T> void npy_save(std::string fname, const std::vector<T> data, std::string mode = "w") {
+    template<typename T> bool npy_save(std::string fname, const std::vector<T> data, std::string mode = "w") {
         std::vector<size_t> shape;
         shape.push_back(data.size());
-        npy_save(fname, &data[0], shape, mode);
+        return npy_save(fname, &data[0], shape, mode);
     }
 
-    template<typename T> void npz_save(std::string zipname, std::string fname, const std::vector<T> data, std::string mode = "w") {
+    template<typename T> bool npz_save(std::string zipname, std::string fname, const std::vector<T> data, std::string mode = "w") {
         std::vector<size_t> shape;
         shape.push_back(data.size());
-        npz_save(zipname, fname, &data[0], shape, mode);
+        return npz_save(zipname, fname, &data[0], shape, mode);
     }
 
     template<typename T> std::vector<char> create_npy_header(const std::vector<size_t>& shape) {  
