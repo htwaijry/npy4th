@@ -202,7 +202,7 @@ static int savenpy_l(lua_State *L){
 }
 
 
-static const struct luaL_reg npyth [] = {
+static const struct luaL_Reg npyth [] = {
   {"loadnpy", loadnpy_l},
   {"loadnpz", loadnpz_l},
   {"savenpy", savenpy_l},
@@ -210,6 +210,16 @@ static const struct luaL_reg npyth [] = {
 };
 
 extern "C" int luaopen_libnpy4th (lua_State *L) {
-  luaL_openlib(L, "libnpy4th", npyth, 0);
-  return 1;
+  //luaL_openlib(L, "libnpy4th", npyth, 0);
+    //luaL_newlib(L, npyth);
+    //lua_pushvalue(L,-1);
+    //lua_setglobal(L,"libnpy4th");
+    //lua_pop(L,1);
+    lua_newtable(L);
+    luaL_setfuncs(L,npyth, 0);
+    lua_setglobal(L, "libnpy4th");
+    return 1;
 }
+
+
+
