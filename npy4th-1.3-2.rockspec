@@ -1,9 +1,9 @@
 package = "npy4th"
-version = "1.3-1"
+version = "1.3-2"
 
 source = {
    url = "git://github.com/htwaijry/npy4th",
-   tag = "1.3-1"
+   tag = "1.3-2"
 }
 
 description = {
