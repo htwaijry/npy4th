@@ -43,7 +43,7 @@ npy4th.loadnpz = function(filepath)
                    return libnpy4th.loadnpz(filepath)
                 end
 
-npy4th.savenpy = function(filepath, tensor)
+npy4th.savenpy = function(filepath, tensor, mode)
 		  if not filepath then
 			xlua.error('file path must be supplied', 
 					'npy4th.savenpy', 
@@ -56,7 +56,9 @@ npy4th.savenpy = function(filepath, tensor)
 			tensor = tensor:float() -- convert it to float
 		  end
 
-		  return libnpy4th.savenpy(filepath, tensor, typeIds[tensor:type()])
+          mode = mode or 'w'
+
+		  return libnpy4th.savenpy(filepath, tensor, typeIds[tensor:type()], mode)
 		end
 
 return npy4th

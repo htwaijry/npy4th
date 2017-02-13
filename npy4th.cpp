@@ -89,7 +89,7 @@ static int loadnpy_l(lua_State *L) {
 		cnpy::NpyArray arr = cnpy::npy_load(fpath);
 
 		load_array_to_lua(L, arr);
-	
+
 	} catch (std::exception& e){
 		THError(e.what());
 	}
@@ -143,25 +143,28 @@ static int savenpy_l(lua_State *L){
 		const char *inType = luaT_typename(L, 2);
 
 		int typeId = luaL_checkinteger(L, 3);
+
+        const char *mode = lua_tostring(L, 4);
+
 		bool success=false;
 		switch ( typeId ){
 		case 0: //double
 		{	THDoubleTensor * tensor = (THDoubleTensor *) luaT_checkudata(L, 2, inType);
 			std::vector<size_t> shape = get_shape(tensor->nDimension, tensor->size);
-			success=cnpy::npy_save<double>(fpath, tensor->storage->data, shape, "w");
+			success=cnpy::npy_save<double>(fpath, tensor->storage->data, shape, mode);
 		} break;
 	
 		case 1: //float
 		{	THFloatTensor * tensor = (THFloatTensor *) luaT_checkudata(L, 2, inType);
 			std::vector<size_t> shape = get_shape(tensor->nDimension, tensor->size);
-			success=cnpy::npy_save<float>(fpath, tensor->storage->data, shape, "w");
+			success=cnpy::npy_save<float>(fpath, tensor->storage->data, shape, mode);
 		} 
 		break;
 	
 		case 2: //int
 		{	THIntTensor * tensor = (THIntTensor *) luaT_checkudata(L, 2, inType);
 			std::vector<size_t> shape = get_shape(tensor->nDimension, tensor->size);
-			success=cnpy::npy_save<int>(fpath, tensor->storage->data, shape, "w");
+			success=cnpy::npy_save<int>(fpath, tensor->storage->data, shape, mode);
 		} 
 		break;
 
@@ -169,21 +172,21 @@ static int savenpy_l(lua_State *L){
 		case 3: //byte
 		{	THByteTensor * tensor = (THByteTensor *) luaT_checkudata(L, 2, inType);
 			std::vector<size_t> shape = get_shape(tensor->nDimension, tensor->size);
-			success=cnpy::npy_save<unsigned char>(fpath, tensor->storage->data, shape, "w");
+			success=cnpy::npy_save<unsigned char>(fpath, tensor->storage->data, shape, mode);
 		} 
 		break;
 
 		case 4: //long
 		{	THLongTensor * tensor = (THLongTensor *) luaT_checkudata(L, 2, inType);
 			std::vector<size_t> shape = get_shape(tensor->nDimension, tensor->size);
-			success=cnpy::npy_save<long>(fpath, tensor->storage->data, shape, "w");
+			success=cnpy::npy_save<long>(fpath, tensor->storage->data, shape, mode);
 		} 
 		break;
 
 		case 5: //short
 		{	THShortTensor * tensor = (THShortTensor *) luaT_checkudata(L, 2, inType);
 			std::vector<size_t> shape = get_shape(tensor->nDimension, tensor->size);
-			success=cnpy::npy_save<short>(fpath, tensor->storage->data, shape, "w");
+			success=cnpy::npy_save<short>(fpath, tensor->storage->data, shape, mode);
 		} 
 		break;
 

@@ -30,4 +30,8 @@ tbl = npy4th.loadnpz('table.npz')
 -- save a torch.*Tensor into a .npy file
 myTensor = torch.Tensor({1,2,3})
 npy4th.savenpy('tensor.npy', myTensor)
+
+-- append a torch.*Tensor to an existing .npy file
+myTensor2 = torch.Tensor({4,5,6})
+npy4th.savenpy('tensor.npy', myTensor2, 'a')
 ```
