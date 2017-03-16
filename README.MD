@@ -35,3 +35,6 @@ npy4th.savenpy('tensor.npy', myTensor)
 myTensor2 = torch.Tensor({4,5,6})
 npy4th.savenpy('tensor.npy', myTensor2, 'a')
 ```
+
+### The Official `npy4th` Mascot
+![example-documentation.jpg](example-documentation.jpg)
